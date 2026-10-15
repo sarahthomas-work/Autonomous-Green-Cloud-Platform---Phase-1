@@ -30,12 +30,6 @@ export AWS_DEFAULT_REGION=ap-south-1
 ```
 ansible-playbook playbooks/aws_status.yml | tee logs/before.txt
 ```
-Also screenshot EC2 -> Instances (Instance type column).
-
-## 4. Practice (no changes)
-Window 1:  `DRY_RUN=true uvicorn trigger_listener:app --port 8500`
-Window 2:  `./send_test_trigger.sh`
-(No AWS keys? use `MOCK=true` instead of `DRY_RUN=true`. That is a simulation only, not real proof.)
 
 ## 5. Real resize
 Window 1:  Ctrl+C, then `uvicorn trigger_listener:app --host 0.0.0.0 --port 8500`
