@@ -1,0 +1,10 @@
+{
+  "action": "resize_up",
+  "instance_id": "i-01c0c542f161b1a02",
+  "ip": "18.232.158.190",
+  "region": "us-east-1",
+  "metric": "cpu",
+  "predicted_value": 91.0,
+  "threshold": 80,
+  "horizon_minutes": 15
+}

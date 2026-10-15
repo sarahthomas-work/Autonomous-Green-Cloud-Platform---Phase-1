@@ -1,0 +1,14 @@
+# OPTIONAL: automatic inventory straight from AWS (needs AWS keys).
+# Use it with:  ansible-inventory -i inventory/aws_ec2.yml --graph
+plugin: amazon.aws.aws_ec2
+regions:
+  - ap-south-1
+  - us-east-1
+filters:
+  instance-state-name: running
+hostnames:
+  - ip-address
+compose:
+  ansible_host: public_ip_address
+  instance_id: instance_id
+  region: placement.region

@@ -1,0 +1,24 @@
+---
+# Take a snapshot of each server's state. Run it BEFORE and AFTER remediation
+# and keep both outputs as evidence for your report.
+#   ansible-playbook playbooks/health_check.yml | tee logs/before.txt
+- name: Health snapshot
+  hosts: web_servers
+  gather_facts: true
+  tasks:
+    - name: Load average
+      ansible.builtin.command: uptime
+      register: up
+      changed_when: false
+
+    - name: Memory
+      ansible.builtin.command: free -m
+      register: mem
+      changed_when: false
+
+    - name: Show
+      ansible.builtin.debug:
+        msg:
+          - "Host: {{ inventory_hostname }} ({{ ansible_host }})"
+          - "CPUs: {{ ansible_processor_vcpus }}  RAM MB: {{ ansible_memtotal_mb }}"
+          - "{{ up.stdout }}"

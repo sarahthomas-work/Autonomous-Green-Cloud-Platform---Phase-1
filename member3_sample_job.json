@@ -1,0 +1,14 @@
+{
+  "predicted_value": 85.42,
+  "input_values": 60,
+  "optimization_recommendation": "High predicted resource utilization. Consider proactive scaling or workload redistribution.",
+  "threshold_evaluation": {"matched": true, "message": "Threshold condition matched."},
+  "automation_job": {
+    "job_id": "job-001",
+    "node_id": "15.252.164.35:9100",
+    "action": "scale_up",
+    "rule_id": "cpu-high-01",
+    "status": "PENDING",
+    "reason": "Predicted value exceeded threshold."
+  }
+}

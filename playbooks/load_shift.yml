@@ -1,0 +1,45 @@
+---
+# Move traffic AWAY from a busy server by lowering its weight in nginx.
+# Set restore=true to put all weights back to normal.
+#
+# Example:
+#   ansible-playbook playbooks/load_shift.yml -e '{"busy_ip":"1.2.3.4"}'
+#   ansible-playbook playbooks/load_shift.yml -e '{"busy_ip":"1.2.3.4","restore":true}'
+- name: Shift load away from a busy server
+  hosts: load_balancers
+  become: true
+  vars:
+    restore: false
+    normal_weight: 3
+    shifted_weight: 1
+    busy_weight: "{{ normal_weight if restore | bool else shifted_weight }}"
+  tasks:
+    - name: Need to know which server is busy
+      ansible.builtin.assert:
+        that: busy_ip is defined
+        fail_msg: "Pass busy_ip (the public IP of the busy server)."
+
+    - name: Make sure nginx is installed
+      ansible.builtin.package:
+        name: nginx
+        state: present
+
+    - name: Write the new traffic weights
+      ansible.builtin.template:
+        src: ../templates/nginx_upstream.conf.j2
+        dest: /etc/nginx/conf.d/app_upstream.conf
+        mode: "0644"
+        backup: true
+
+    - name: Check the nginx config is valid before applying
+      ansible.builtin.command: nginx -t
+      changed_when: false
+
+    - name: Reload nginx (no downtime)
+      ansible.builtin.service:
+        name: nginx
+        state: reloaded
+
+    - name: Confirm
+      ansible.builtin.debug:
+        msg: "LOADSHIFT_RESULT: busy={{ busy_ip }} weight={{ busy_weight }} others={{ normal_weight }} restore={{ restore }}"

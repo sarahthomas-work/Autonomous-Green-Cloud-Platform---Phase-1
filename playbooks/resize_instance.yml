@@ -1,0 +1,94 @@
+---
+# Proactively resize one EC2 instance (up = bigger, down = smaller).
+# Runs from your laptop and talks to the AWS API (needs AWS keys).
+#
+# Example:
+#   ansible-playbook playbooks/resize_instance.yml \
+#     -e '{"instance_id":"i-0abc123","region":"ap-south-1","direction":"up"}'
+- name: Proactive resize of an EC2 instance
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    direction: up               # up or down
+    region: ap-south-1
+    size_ladder:                # step order: edit to match your team's allowed sizes
+      - t3.micro
+      - t3.small
+      - t3.medium
+      - t3.large
+      - t3.xlarge
+  tasks:
+    - name: Make sure we were told which instance to resize
+      ansible.builtin.assert:
+        that:
+          - instance_id is defined
+          - direction in ['up', 'down']
+        fail_msg: "Pass instance_id and direction (up/down)."
+
+    - name: Read the current state of the instance (BEFORE)
+      amazon.aws.ec2_instance_info:
+        instance_ids: ["{{ instance_id }}"]
+        region: "{{ region }}"
+      register: before
+
+    - name: Remember the current size
+      ansible.builtin.set_fact:
+        current_type: "{{ before.instances[0].instance_type }}"
+
+    - name: Work out the new size
+      ansible.builtin.set_fact:
+        new_type: >-
+          {{ target_type
+             if target_type is defined
+             else (
+               size_ladder[[size_ladder.index(current_type) + 1, size_ladder | length - 1] | min]
+               if direction == 'up'
+               else size_ladder[[size_ladder.index(current_type) - 1, 0] | max]
+             ) }}
+
+    - name: Say what we are about to do
+      ansible.builtin.debug:
+        msg: "PLAN: {{ instance_id }} {{ current_type }} -> {{ new_type }}"
+
+    - name: Skip if already at the limit
+      ansible.builtin.debug:
+        msg: "RESIZE_RESULT: {{ instance_id }} already at {{ current_type }}, nothing to change"
+      when: new_type == current_type
+
+    - name: Do the resize
+      when: new_type != current_type
+      block:
+        - name: Stop the instance (a type change needs it stopped)
+          amazon.aws.ec2_instance:
+            instance_ids: ["{{ instance_id }}"]
+            region: "{{ region }}"
+            state: stopped
+            wait: true
+
+        - name: Change the instance type
+          amazon.aws.ec2_instance:
+            instance_ids: ["{{ instance_id }}"]
+            region: "{{ region }}"
+            instance_type: "{{ new_type }}"
+            state: stopped
+            wait: true
+
+        - name: Start the instance again
+          amazon.aws.ec2_instance:
+            instance_ids: ["{{ instance_id }}"]
+            region: "{{ region }}"
+            state: running
+            wait: true
+
+        - name: Read the instance again (AFTER)
+          amazon.aws.ec2_instance_info:
+            instance_ids: ["{{ instance_id }}"]
+            region: "{{ region }}"
+          register: after
+
+        - name: Confirm
+          ansible.builtin.debug:
+            msg: >-
+              RESIZE_RESULT: {{ instance_id }} {{ current_type }} -> {{ after.instances[0].instance_type }}
+              (state: {{ after.instances[0].state.name }})

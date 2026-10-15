@@ -1,0 +1,7 @@
+# Managed by Ansible (Member 5 load-shift playbook). Do not edit by hand.
+# Your nginx server block must contain:  proxy_pass http://app_backend;
+upstream app_backend {
+{% for h in groups['web_servers'] %}
+    server {{ hostvars[h].ansible_host }}:{{ backend_port | default(80) }} weight={{ (busy_weight if hostvars[h].ansible_host == busy_ip else normal_weight) }};
+{% endfor %}
+}

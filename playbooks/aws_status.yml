@@ -1,0 +1,26 @@
+---
+# Shows size, state and IP of every worker by asking AWS directly.
+# Needs only the AWS keys (no .pem / SSH). Run before and after a resize:
+#   ansible-playbook playbooks/aws_status.yml | tee logs/before.txt
+- name: AWS status of every worker (no SSH needed)
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Ask AWS about each worker
+      amazon.aws.ec2_instance_info:
+        instance_ids: ["{{ hostvars[item].instance_id }}"]
+        region: "{{ hostvars[item].region }}"
+      loop: "{{ groups['web_servers'] }}"
+      register: info
+
+    - name: Show result
+      ansible.builtin.debug:
+        msg: >-
+          {{ item.item }} | {{ item.instances[0].instance_id }} |
+          type={{ item.instances[0].instance_type }} |
+          state={{ item.instances[0].state.name }} |
+          public_ip={{ item.instances[0].public_ip_address | default('none') }}
+      loop: "{{ info.results }}"
+      loop_control:
+        label: "{{ item.item }}"
