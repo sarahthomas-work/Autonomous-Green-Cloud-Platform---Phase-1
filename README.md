@@ -1,6 +1,6 @@
-# Member 5 - Proactive Remediation & Automation Playbooks
+# Proactive Remediation & Automation Playbooks
 
-Member 3's prediction -> trigger_listener.py -> Ansible playbook -> AWS action -> logs.
+trigger prediction -> trigger_listener.py -> Ansible playbook -> AWS action -> logs.
 
 | Warning action | Playbook | What happens |
 |---|---|---|
