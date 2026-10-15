@@ -8,8 +8,6 @@ trigger prediction -> trigger_listener.py -> Ansible playbook -> AWS action -> l
 | `resize_down` | playbooks/resize_instance.yml | same, smaller |
 | `load_shift` / `load_restore` | playbooks/load_shift.yml | needs an nginx load balancer + SSH (not available yet) |
 
-Servers (from Member 2): Mumbai i-086dec7df4c6aac1a, N. Virginia i-01c0c542f161b1a02.
-No .pem key is used. Everything works through the AWS API with AWS keys.
 
 ## 1. Install (Ubuntu / WSL)
 ```
@@ -50,17 +48,14 @@ Wait 2-5 minutes per resize.
 ansible-playbook playbooks/aws_status.yml | tee logs/after.txt
 python generate_report.py
 ```
-Screenshot EC2 again. Submit report.md, screenshots, logs/, playbooks/.
 
 ## 7. Clean up (go back to the original size)
 ```
 ./send_test_trigger.sh sample_trigger_resize_down.json
 ```
-(There is a 10-minute wait between actions on the same server; wait if it says skipped_cooldown.)
 
 ## Notes
 - Resize restarts the server. Its public IP will change unless it is an Elastic IP, so
   15.252.164.35 / 18.232.158.190 may be different afterwards. Check with aws_status.yml.
 - Allowed sizes are in size_ladder in resize_instance.yml (t3.micro ... t3.xlarge).
   If the workers use another family (e.g. t2), edit that list to match.
-- Never share or commit AWS keys.
